@@ -25,16 +25,15 @@
 
   <!-- ── Native Library Copy Target ─────────────────────────────────── -->
   <!-- Copy the compiled C++ shared library to the output directory so
-       DllImport / P/Invoke can resolve it at runtime.
-       Adjust the path below to match the CMake output directory. -->
+       DllImport / P/Invoke can resolve it at runtime. -->
   <ItemGroup>
-    <None Include="..\..\src\SymbolicRegressionNet.Core\build\bin\Release\SymbolicRegressionNetCore.dll"
-          Condition="Exists('..\..\src\SymbolicRegressionNet.Core\build\bin\Release\SymbolicRegressionNetCore.dll')"
+    <None Include="runtimes\win-x64\native\SymbolicRegressionNetCore.dll"
+          Condition="Exists('runtimes\win-x64\native\SymbolicRegressionNetCore.dll')"
           CopyToOutputDirectory="PreserveNewest"
           Link="SymbolicRegressionNetCore.dll" />
-    <!-- Linux shared library -->
-    <None Include="..\..\src\SymbolicRegressionNet.Core\build\bin\libSymbolicRegressionNetCore.so"
-          Condition="Exists('..\..\src\SymbolicRegressionNet.Core\build\bin\libSymbolicRegressionNetCore.so')"
+    <!-- Linux shared library placeholder -->
+    <None Include="runtimes\linux-x64\native\libSymbolicRegressionNetCore.so"
+          Condition="Exists('runtimes\linux-x64\native\libSymbolicRegressionNetCore.so')"
           CopyToOutputDirectory="PreserveNewest"
           Link="libSymbolicRegressionNetCore.so" />
   </ItemGroup>
