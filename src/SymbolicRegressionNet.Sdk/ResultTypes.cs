@@ -14,7 +14,9 @@ namespace SymbolicRegressionNet.Sdk
         double BestMse,
         double BestR2,
         string BestEquation,
-        int ParetoFrontSize
+        int ParetoFrontSize,
+        TimeSpan? EstimatedTimeRemaining = null,
+        double EvaluationsPerSecond = 0.0
     );
 
     /// <summary>
@@ -24,7 +26,9 @@ namespace SymbolicRegressionNet.Sdk
         string Expression,
         double Mse,
         double R2,
-        int Complexity
+        int Complexity,
+        double Aic = double.NaN,
+        double Bic = double.NaN
     );
 
     /// <summary>
@@ -39,6 +43,16 @@ namespace SymbolicRegressionNet.Sdk
         /// Gets the best discovered model based on R2 score.
         /// </summary>
         public DiscoveredModel Best => _models.OrderByDescending(m => m.R2).FirstOrDefault();
+
+        /// <summary>
+        /// Gets the best discovered model based on Akaike Information Criterion (lowest AIC).
+        /// </summary>
+        public DiscoveredModel BestByAic => _models.OrderBy(m => m.Aic).FirstOrDefault();
+
+        /// <summary>
+        /// Gets the best discovered model based on Bayesian Information Criterion (lowest BIC).
+        /// </summary>
+        public DiscoveredModel BestByBic => _models.OrderBy(m => m.Bic).FirstOrDefault();
 
         public int Count => _models.Count;
         public DiscoveredModel this[int index] => _models[index];
@@ -82,6 +96,23 @@ namespace SymbolicRegressionNet.Sdk
         string BestExpression,
         HallOfFame HallOfFame,
         int GenerationsRun,
-        TimeSpan ElapsedTime
-    );
+        TimeSpan ElapsedTime,
+        IReadOnlyList<Api.FeatureImportance> FeatureImportances = null
+    )
+    {
+        public override string ToString()
+        {
+            var sb = new System.Text.StringBuilder();
+            sb.AppendLine($"Best Expression: {BestExpression}");
+            sb.AppendLine($"Generations: {GenerationsRun}");
+            sb.AppendLine($"Elapsed: {ElapsedTime.TotalSeconds:F2}s");
+            if (FeatureImportances != null && FeatureImportances.Count > 0)
+            {
+                sb.AppendLine("Feature Importance:");
+                foreach (var f in FeatureImportances)
+                    sb.AppendLine($"  {f}");
+            }
+            return sb.ToString();
+        }
+    }
 }

@@ -57,6 +57,26 @@ namespace SymbolicRegressionNet.Sdk.Data
         /// </summary>
         public string TargetName => _targetIndex >= 0 ? _columnNames[_targetIndex] : null;
 
+        /// <summary>
+        /// Gets a feature value for a specific row index, mapping virtual view indices transparently.
+        /// </summary>
+        public double GetFeatureValue(int row, int featureIndex)
+        {
+            int realRow = _rowIndices != null ? _rowIndices[row] : row;
+            int colIndex = (_targetIndex >= 0 && featureIndex >= _targetIndex) ? featureIndex + 1 : featureIndex;
+            return _columns[colIndex][realRow];
+        }
+
+        /// <summary>
+        /// Gets the target value for a specific row index, mapping virtual view indices transparently.
+        /// </summary>
+        public double GetTargetValue(int row)
+        {
+            if (_targetIndex < 0) throw new InvalidOperationException("Dataset has no target column specified.");
+            int realRow = _rowIndices != null ? _rowIndices[row] : row;
+            return _columns[_targetIndex][realRow];
+        }
+
         internal Dataset(double[][] columns, string[] columnNames, int[] rowIndices, int targetIndex = -1)
         {
             _columns = columns;
@@ -283,6 +303,22 @@ namespace SymbolicRegressionNet.Sdk.Data
         }
 
         /// <summary>
+        /// Scales this dataset using the specified stateful data scaler.
+        /// Useful for applying the same scaling parameters to both training and test datasets.
+        /// </summary>
+        public Dataset Scale(IDataScaler scaler)
+        {
+            if (scaler == null) throw new ArgumentNullException(nameof(scaler));
+            // If the scaler hasn't been fitted yet, we assume the user wants to fit it on THIS dataset.
+            var standardScaler = scaler as StandardScaler;
+            if (standardScaler != null && !standardScaler.IsFitted)
+            {
+                return scaler.FitTransform(this);
+            }
+            return scaler.Transform(this);
+        }
+
+        /// <summary>
         /// Normalizes feature columns in place, returning a new view (or modifying existing if not a view).
         /// To strictly follow zero-copy over original, standard practice might copy or modify in place.
         /// We clone columns that are modified.
@@ -344,6 +380,32 @@ namespace SymbolicRegressionNet.Sdk.Data
             return new Dataset(_columns, _columnNames, rowIndices, _targetIndex);
         }
 
+        /// <summary>
+        /// Creates a bootstrap sample of the dataset by randomly sampling rows with replacement.
+        /// This creates a lightweight, zero-copy view over the same underlying arrays.
+        /// </summary>
+        /// <param name="sampleRatio">Ratio of rows to sample. 1.0 = sample exactly N rows.</param>
+        /// <param name="randomSeed">Optional seed for deterministic sampling.</param>
+        public Dataset BootstrapSample(double sampleRatio = 1.0, int? randomSeed = null)
+        {
+            if (sampleRatio <= 0) throw new ArgumentOutOfRangeException(nameof(sampleRatio));
+
+            int totalRows = Rows;
+            int numSamples = (int)Math.Max(1, Math.Round(totalRows * sampleRatio));
+
+            var rng = randomSeed.HasValue ? new Random(randomSeed.Value) : new Random();
+            int[] newIndices = new int[numSamples];
+
+            for (int i = 0; i < numSamples; i++)
+            {
+                // If this dataset is ALREADY a view, we need to pick from the current view's indices
+                int randomVirtualIdx = rng.Next(totalRows);
+                newIndices[i] = _rowIndices != null ? _rowIndices[randomVirtualIdx] : randomVirtualIdx;
+            }
+
+            return CreateView(newIndices);
+        }
+
         // ─── Interop ───
 
         /// <summary>
@@ -374,9 +436,9 @@ namespace SymbolicRegressionNet.Sdk.Data
         }
 
         /// <summary>
-        /// Gets the raw underlying array for a named column (used by Splitter).
+        /// Gets the raw underlying array for a named column (used by Splitter and Scalers).
         /// </summary>
-        internal double[] GetRawColumn(string columnName)
+        public double[] GetRawColumn(string columnName)
         {
             int idx = Array.IndexOf(_columnNames, columnName);
             if (idx < 0) throw new ArgumentException($"Column '{columnName}' not found.");

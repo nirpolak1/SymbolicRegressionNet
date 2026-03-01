@@ -5,7 +5,7 @@
     <RootNamespace>SymbolicRegressionNet.Sdk</RootNamespace>
     <AssemblyName>SymbolicRegressionNet.Sdk</AssemblyName>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <Nullable>enable</Nullable>
+    <Nullable>disable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
 

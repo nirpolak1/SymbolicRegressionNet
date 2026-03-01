@@ -1,0 +1,7 @@
+﻿C:\Nir - Personal\Repos\SymbolicRegressionNet\src\SymbolicRegressionNet.Sdk\Api\EnsembleRegressor.cs(21,16): error CS0051: Inconsistent accessibility: parameter type 'NativeOptions' is less accessible than method 'EnsembleRegressor.EnsembleRegressor(Dataset, NativeOptions, EnsembleOptions)' [C:\Nir - Personal\Repos\SymbolicRegressionNet\src\SymbolicRegressionNet.Sdk\SymbolicRegressionNet.Sdk.csproj]
+
+Build FAILED.
+    11 Warning(s)
+    1 Error(s)
+
+Time Elapsed 00:00:00.85

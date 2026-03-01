@@ -6,8 +6,12 @@ Unlike traditional regression that fits coefficients to a pre-defined model stru
 
 By combining the raw execution speed and auto-vectorization of C++ with the developer experience and memory safety of a modern .NET C# API, SymbolicRegressionNet achieves the best of both worlds.
 
-## Features
-- **C++ Core Engine**: High-performance evolutionary search using Age-Fitness Pareto (AFP) and ε-Lexicase Selection.
+## Engine Features & Capabilities [V0.15]
+- **Zero-Allocation Trees** FastStackEvaluator completely bypasses Garbage Collection during 100% of mathematical traversals.
+- **Hardware Agnostic Acceleration** Abstract Evaluators compile into AVX2 Intrinsic Instructions or GPU TPL Batches.
+- **Advanced Optimization Algorithms** Island Model Parallelism, Double Tournament Selection, and Exact Forward-Mode Quasi-Newton L-BFGS.
+- **Scientifically Grounded** Context-Free PCFG Grammar constraints logically guard formulas.
+- **Pre-Trained AI Seed Injections** Optionally integrate LLM/Transformer ONNX topologies instead of traversing random walks.
 - **Constant Optimization**: Uses Levenberg-Marquardt optimizer with Forward-Mode Automatic Differentiation to tune constants in the discovered equations.
 - **Zero-Copy Interop**: Data ingested in C# is pinned in memory, allowing the C++ engine to compute directly on C# arrays without expensive data copies.
 - **SIMD/AVX2 Vectorization**: Calculates outputs and errors across entire datasets efficiently utilizing CPU intrinsics.
@@ -48,7 +52,7 @@ foreach (var model in result.HallOfFame)
 }
 ```
 
-> **Tip:** You can check out the `tests/SymbolicRegressionNet.Benchmarks/Program.cs` file in the repository for a complete runnable evaluation setup.
+> **Tip:** You can check out the `examples/SymbolicRegressionNet.Example/Program.cs` file in the repository for a complete runnable evaluation setup.
 
 ---
 

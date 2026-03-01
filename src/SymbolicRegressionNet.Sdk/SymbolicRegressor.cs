@@ -6,9 +6,10 @@ using System.Threading;
 using System.Threading.Tasks;
 using SymbolicRegressionNet.Sdk.Data;
 using SymbolicRegressionNet.Sdk.Interop;
-
 namespace SymbolicRegressionNet.Sdk
 {
+    using Api.Evaluators;
+
     /// <summary>
     /// Orchestrator for the symbolic regression engine.
     /// Manages native engine lifetime, data pinning, and async execution.
@@ -22,6 +23,85 @@ namespace SymbolicRegressionNet.Sdk
 
         private IntPtr _engine = IntPtr.Zero;
         private readonly PinnedData _pinnedTrain;
+
+        /// <summary>
+        /// The active external evaluator bridging the native genome to C# parallel runtime evaluations.
+        /// </summary>
+        public Api.Evaluators.IEvaluator Evaluator { get; set; } = new Api.Evaluators.FallbackCpuEvaluator();
+
+        /// <summary>
+        /// Hardware-accelerated batch evaluator for evaluating thousands of trees simultaneously.
+        /// </summary>
+        public Api.Evaluators.IBatchEvaluator BatchEvaluator { get; set; } = new Api.Evaluators.StubGpuBatchEvaluator();
+
+        /// <summary>
+        /// Pluggable selection strategy dictating how parents are chosen, providing options for bloat control.
+        /// </summary>
+        public Api.ISelectionStrategy SelectionStrategy { get; set; } = new Api.DoubleTournamentSelection();
+
+        /// <summary>
+        /// Optional screening strategy that prevents expensive full-evaluations on candidates
+        /// that fail a preliminary fast subset test.
+        /// </summary>
+        public Api.ITieredEvaluationStrategy TieredEvaluationStrategy { get; set; } = new Api.SubsetTieredStrategy();
+
+        /// <summary>
+        /// Reinforcement learning bandit that dictates which genetic operators to apply based on empirical reward history.
+        /// </summary>
+        public Api.IOperatorBandit OperatorBandit { get; set; } = new Api.EpsilonGreedyBandit();
+
+        /// <summary>
+        /// Computer Algebra System evaluating output HallOfFame expressions and simplifying identities.
+        /// </summary>
+        public Api.Simplification.ICasSimplifier CasSimplifier { get; set; } = new Api.Simplification.BasicAlgebraicSimplifier();
+
+        /// <summary>
+        /// Numerically optimizes constant parameters extracted from the program using exact gradients.
+        /// </summary>
+        public Api.Optimization.IConstantOptimizer ConstantOptimizer { get; set; } = new Api.Optimization.LbfgsOptimizer();
+
+        /// <summary>
+        /// Generates educated structural priors via external models (like Transformers) to jumpstart search.
+        /// </summary>
+        public Api.Seeding.ITopologySeeder TopologySeeder { get; set; } = new Api.Seeding.TransformerSeeder();
+
+        /// <summary>
+        /// Validates syntactic trees across physical constraints and Probabilistic Context Free Grammars.
+        /// </summary>
+        public Api.Grammar.IGrammarConstraint GrammarConstraint { get; set; } = new Api.Grammar.SimplePcfgGrammar();
+
+        // Global native callback tracking
+        private static readonly NativeMethods.NativeLogCallback _logCallbackDelegate;
+
+        /// <summary>
+        /// Raised when the native C++ engine emits an internal diagnostic log.
+        /// </summary>
+        public static event EventHandler<Api.EngineLogEventArgs> GlobalEngineLog;
+
+        static SymbolicRegressor()
+        {
+            _logCallbackDelegate = OnNativeLog;
+            try
+            {
+                NativeMethods.SRNet_SetLogCallback(_logCallbackDelegate);
+            }
+            catch (EntryPointNotFoundException)
+            {
+                // Backwards compatibility if native engine hasn't implemented this export yet
+            }
+        }
+
+        private static void OnNativeLog(int level, string message)
+        {
+            GlobalEngineLog?.Invoke(null, new Api.EngineLogEventArgs((Api.EngineLogLevel)level, message ?? string.Empty));
+        }
+
+
+        /// <summary>
+        /// Optional metric to customize complexity scoring of discovered expressions.
+        /// </summary>
+        public Api.IComplexityMetric ComplexityMetric { get; set; } = new Api.OperatorPenaltyMetric();
+
 
         // Telemetry handlers
         private readonly List<IProgress<GenerationReport>> _progressHandlers = new();
@@ -85,12 +165,27 @@ namespace SymbolicRegressionNet.Sdk
                     NativeMethods.SRNet_Step(_engine, 1, out NativeRunStats stats);
                     generationsRun++;
 
+                    var elapsedSoFar = DateTime.UtcNow - startTime;
+                    double evalsPerSec = elapsedSoFar.TotalSeconds > 0 
+                        ? generationsRun / elapsedSoFar.TotalSeconds 
+                        : 0.0;
+
+                    TimeSpan? eta = null;
+                    if (generationsRun > 0 && Options.MaxGenerations > 0)
+                    {
+                        double msPerGen = elapsedSoFar.TotalMilliseconds / generationsRun;
+                        int gensLeft = Options.MaxGenerations - generationsRun;
+                        eta = TimeSpan.FromMilliseconds(msPerGen * gensLeft);
+                    }
+
                     var report = new GenerationReport(
                         stats.Generation, 
                         stats.BestMse, 
                         stats.BestR2, 
                         stats.BestEquation, 
-                        stats.ParetoFrontSize);
+                        stats.ParetoFrontSize,
+                        eta,
+                        evalsPerSec);
 
                     progress?.Report(report);
                     NotifyTelemetry(report);
@@ -122,11 +217,23 @@ namespace SymbolicRegressionNet.Sdk
             var hof = new HallOfFame();
             for (int i = 0; i < count; i++)
             {
+                int baseK = i; // fallback proxy if engine does not supply
+                
+                string parsedEquation = hofStats[i].BestEquation;
+                if (CasSimplifier != null) parsedEquation = CasSimplifier.Simplify(parsedEquation);
+
+                int k = ComplexityMetric != null ? ComplexityMetric.CalculateComplexity(parsedEquation, baseK) : baseK;
+
+                double aic = Reporting.ModelSelectionMetrics.CalculateAic(TrainDataset.Rows, hofStats[i].BestMse, k);
+                double bic = Reporting.ModelSelectionMetrics.CalculateBic(TrainDataset.Rows, hofStats[i].BestMse, k);
+
                 hof.Add(new DiscoveredModel(
-                    hofStats[i].BestEquation,
+                    parsedEquation,
                     hofStats[i].BestMse,
                     hofStats[i].BestR2,
-                    Complexity: i // Proxy for complexity, real implementation will parse or compute
+                    Complexity: k,
+                    Aic: aic,
+                    Bic: bic
                 ));
             }
             return hof;

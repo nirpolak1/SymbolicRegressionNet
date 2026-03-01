@@ -1,0 +1,9 @@
+﻿C:\Nir - Personal\Repos\SymbolicRegressionNet\tests\SymbolicRegressionNet.Sdk.Tests\DataScalerTests.cs(25,45): error CS1061: 'Dataset' does not contain a definition for 'GetRawColumn' and no accessible extension method 'GetRawColumn' accepting a first argument of type 'Dataset' could be found (are you missing a using directive or an assembly reference?) [C:\Nir - Personal\Repos\SymbolicRegressionNet\tests\SymbolicRegressionNet.Sdk.Tests\SymbolicRegressionNet.Sdk.Tests.csproj]
+C:\Nir - Personal\Repos\SymbolicRegressionNet\tests\SymbolicRegressionNet.Sdk.Tests\DataScalerTests.cs(41,48): error CS1061: 'Dataset' does not contain a definition for 'GetRawColumn' and no accessible extension method 'GetRawColumn' accepting a first argument of type 'Dataset' could be found (are you missing a using directive or an assembly reference?) [C:\Nir - Personal\Repos\SymbolicRegressionNet\tests\SymbolicRegressionNet.Sdk.Tests\SymbolicRegressionNet.Sdk.Tests.csproj]
+C:\Nir - Personal\Repos\SymbolicRegressionNet\tests\SymbolicRegressionNet.Sdk.Tests\DataScalerTests.cs(57,40): error CS1061: 'Dataset' does not contain a definition for 'GetRawColumn' and no accessible extension method 'GetRawColumn' accepting a first argument of type 'Dataset' could be found (are you missing a using directive or an assembly reference?) [C:\Nir - Personal\Repos\SymbolicRegressionNet\tests\SymbolicRegressionNet.Sdk.Tests\SymbolicRegressionNet.Sdk.Tests.csproj]
+
+Build FAILED.
+    3 Warning(s)
+    3 Error(s)
+
+Time Elapsed 00:00:00.97

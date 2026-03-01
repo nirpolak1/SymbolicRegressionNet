@@ -17,6 +17,13 @@ namespace SymbolicRegressionNet.Sdk.Interop
         [DllImport(DllName, CallingConvention = CallingConvention.Cdecl)]
         public static extern void SRNet_DestroyEngine(IntPtr engine);
 
+        [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+        public delegate void NativeLogCallback(int level, [MarshalAs(UnmanagedType.LPStr)] string message);
+
+        [DllImport(DllName, CallingConvention = CallingConvention.Cdecl)]
+        public static extern void SRNet_SetLogCallback(NativeLogCallback callback);
+
+
         // Data binding (legacy flat row-major)
         [DllImport(DllName, CallingConvention = CallingConvention.Cdecl)]
         public static extern void SRNet_SetData(IntPtr engine, IntPtr x_flat, IntPtr y, int rows, int cols);

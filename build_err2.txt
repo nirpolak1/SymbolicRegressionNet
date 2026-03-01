@@ -1,0 +1,8 @@
+﻿C:\Nir - Personal\Repos\SymbolicRegressionNet\tests\SymbolicRegressionNet.Sdk.Tests\TelemetryTests.cs(15,35): error CS0234: The type or namespace name 'NativeOptions' does not exist in the namespace 'SymbolicRegressionNet.Sdk.Api' (are you missing an assembly reference?) [C:\Nir - Personal\Repos\SymbolicRegressionNet\tests\SymbolicRegressionNet.Sdk.Tests\SymbolicRegressionNet.Sdk.Tests.csproj]
+C:\Nir - Personal\Repos\SymbolicRegressionNet\tests\SymbolicRegressionNet.Sdk.Tests\TelemetryTests.cs(18,39): error CS1729: 'SymbolicRegressor' does not contain a constructor that takes 4 arguments [C:\Nir - Personal\Repos\SymbolicRegressionNet\tests\SymbolicRegressionNet.Sdk.Tests\SymbolicRegressionNet.Sdk.Tests.csproj]
+
+Build FAILED.
+    3 Warning(s)
+    2 Error(s)
+
+Time Elapsed 00:00:01.18

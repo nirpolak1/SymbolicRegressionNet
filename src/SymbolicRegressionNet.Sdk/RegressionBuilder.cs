@@ -23,6 +23,8 @@ namespace SymbolicRegressionNet.Sdk
         private TimeSpan? _timeLimit;
         private bool _verbose = false;
         private int _verboseStep = 10;
+        
+        private Api.Evaluators.IBatchEvaluator _batchEvaluator;
 
         public RegressionBuilder()
         {
@@ -142,6 +144,15 @@ namespace SymbolicRegressionNet.Sdk
         public RegressionBuilder WithTimeLimit(TimeSpan limit)
         {
             _timeLimit = limit;
+            return this;
+        }
+
+        /// <summary>
+        /// Supplies a custom batch evaluator, allowing seamless execution on GPU hardware like ILGPU.
+        /// </summary>
+        public RegressionBuilder WithBatchEvaluator(Api.Evaluators.IBatchEvaluator batchEvaluator)
+        {
+            _batchEvaluator = batchEvaluator ?? throw new ArgumentNullException(nameof(batchEvaluator));
             return this;
         }
 
