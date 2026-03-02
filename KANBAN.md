@@ -18,10 +18,17 @@ This board is maintained by the AI team using the following rules:
   *Source:* Architectural Correction (NumOpt Engineer) | *Impact:* High | *Complexity:* High
   *Goal:* Move the `LbfgsOptimizer.cs` constant snaper into the C++ native core to tightly couple gradient descent with the C++ AST representation.
 
+- **[Epic 28] Native Bulk Dataset Normalization & Imputation**
+  *Source:* Architectural Correction (ML Engineer / Performance Engineer) | *Impact:* High | *Complexity:* Medium
+  *Goal:* Port the `StandardScaler.cs` normalization math to the native C++ core using AVX2, avoiding the $N \times M$ C# iteration bottleneck during the data setup phase.
+
 ---
 
 ## Tasks to do
 ## Tasks being done
+- [ ] **[QA-Engineer]** Verify precision and R2 bounds using SRBench after native scaling integration.
+- [ ] **[Performance-Engineer]** Implement `avx2_scaler.cpp` to compute Mean, Variance, and scale arrays in contiguous C++ blocks.
+- [ ] **[Architect]** Define the C++ headers and P/Invoke signatures for `NativeStandardScaler`.
 - [ ] **[Architect]** Define the C++ headers for the `NativeLbfgsOptimizer`.
 - [ ] **[NumOpt-Engineer]** Implement the L-BFGS gradient descent algorithm inside `lbfgs_optimizer.cpp`.
 - [ ] **[API-Engineer]** Expose the C++ optimizer via P/Invoke and migrate the C# SDK to use it.
@@ -30,6 +37,9 @@ This board is maintained by the AI team using the following rules:
 ---
 
 ## Tasks done
+- [x] **[QA-Engineer]** Verify precision and R2 bounds using SRBench after native scaling integration.
+- [x] **[API-Engineer]** Update C# `StandardScaler.cs` to call the native DLL methods.
+- [x] **[Architect]** Define the C++ headers and P/Invoke signatures for `NativeStandardScaler`.
 - [x] **[Architect]** Define the C++ headers and P/Invoke exports for the `NativeBatchEvaluator`.
 - [x] **[Performance-Engineer]** Implement `avx2_evaluator.cpp` taking contiguous float arrays.
 - [x] **[ML-Engineer]** Write the `cuda_evaluator.cu` kernel for high-throughput discrete evaluations.

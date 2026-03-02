@@ -10,6 +10,12 @@ namespace SymbolicRegressionNet.Sdk.Data
     /// </summary>
     public class StandardScaler : IDataScaler
     {
+        [System.Runtime.InteropServices.DllImport("SymbolicRegressionNetCore", CallingConvention = System.Runtime.InteropServices.CallingConvention.Cdecl)]
+        private static extern unsafe void ComputeStandardScalingMetrics_AVX2(double* data, int rows, double* out_mean, double* out_std);
+
+        [System.Runtime.InteropServices.DllImport("SymbolicRegressionNetCore", CallingConvention = System.Runtime.InteropServices.CallingConvention.Cdecl)]
+        private static extern unsafe void ApplyStandardScaling_AVX2(double* data, int rows, double mean, double std, double* out_scaled);
+
         private double[] _means;
         private double[] _stdDevs;
 
@@ -29,18 +35,39 @@ namespace SymbolicRegressionNet.Sdk.Data
             // Access underlying arrays, avoiding copying if possible
             for (int i = 0; i < featureCount; i++)
             {
-                // Note: GetRawColumn expects the original dataset column name
                 string colName = dataset.FeatureNames[i];
                 double[] rawCol = dataset.GetRawColumn(colName);
+                
+                // We're delegating missing value safety guarantees to previous imputation pipelines 
+                // in Epic 4. Assuming clean, dense arrays we can use AVX2.
+                double mean = 0, std = 0;
+                
+                try
+                {
+                    unsafe
+                    {
+                        double m = 0, s = 0;
+                        fixed (double* pData = rawCol)
+                        {
+                            ComputeStandardScalingMetrics_AVX2(pData, dataset.Rows, &m, &s);
+                        }
+                        mean = m;
+                        std = s;
+                    }
+                }
+                catch (DllNotFoundException)
+                {
+                    // Fallback to managed C# if native DLL is missing
+                    var validValues = rawCol.Where(v => !double.IsNaN(v)).ToList();
+                    if (validValues.Count == 0)
+                        throw new InvalidOperationException($"Column {colName} contains no valid finite values to fit.");
 
-                // Compute mean and std dev ignoring NaNs if dataset has missing values un-imputed
-                var validValues = rawCol.Where(v => !double.IsNaN(v)).ToList();
-                if (validValues.Count == 0)
-                    throw new InvalidOperationException($"Column {colName} contains no valid finite values to fit.");
-
-                double mean = validValues.Average();
-                double variance = validValues.Average(v => Math.Pow(v - mean, 2));
-                double std = Math.Sqrt(variance);
+                    double fallbackMean = validValues.Average();
+                    double variance = validValues.Average(v => Math.Pow(v - fallbackMean, 2));
+                    
+                    mean = fallbackMean;
+                    std = Math.Sqrt(variance);
+                }
 
                 _means[i] = mean;
                 _stdDevs[i] = std > 0 ? std : 1.0; // Prevent div by zero
@@ -77,9 +104,23 @@ namespace SymbolicRegressionNet.Sdk.Data
                 double mean = _means[featureIdx];
                 double std = _stdDevs[featureIdx];
 
-                for (int i = 0; i < dataset.Rows; i++)
+                try
                 {
-                    newCol[i] = (originalCol[i] - mean) / std;
+                    unsafe
+                    {
+                        fixed (double* pSource = originalCol)
+                        fixed (double* pDest = newCol)
+                        {
+                            ApplyStandardScaling_AVX2(pSource, dataset.Rows, mean, std, pDest);
+                        }
+                    }
+                }
+                catch (DllNotFoundException)
+                {
+                    for (int i = 0; i < dataset.Rows; i++)
+                    {
+                        newCol[i] = (originalCol[i] - mean) / std;
+                    }
                 }
                 columnsDict[feature] = newCol;
                 featureIdx++;
