@@ -25,6 +25,7 @@ namespace SymbolicRegressionNet.Sdk
         private int _verboseStep = 10;
         
         private Api.Evaluators.IBatchEvaluator _batchEvaluator;
+        private Api.Optimization.IConstantOptimizer _constantOptimizer;
 
         public RegressionBuilder()
         {
@@ -147,12 +148,18 @@ namespace SymbolicRegressionNet.Sdk
             return this;
         }
 
-        /// <summary>
-        /// Supplies a custom batch evaluator, allowing seamless execution on GPU hardware like ILGPU.
-        /// </summary>
         public RegressionBuilder WithBatchEvaluator(Api.Evaluators.IBatchEvaluator batchEvaluator)
         {
             _batchEvaluator = batchEvaluator ?? throw new ArgumentNullException(nameof(batchEvaluator));
+            return this;
+        }
+
+        /// <summary>
+        /// Supplies a custom constant optimizer, allowing optimization of scalar parameters (e.g. L-BFGS).
+        /// </summary>
+        public RegressionBuilder WithConstantOptimizer(Api.Optimization.IConstantOptimizer constantOptimizer)
+        {
+            _constantOptimizer = constantOptimizer ?? throw new ArgumentNullException(nameof(constantOptimizer));
             return this;
         }
 
@@ -192,6 +199,16 @@ namespace SymbolicRegressionNet.Sdk
             };
 
             var regressor = new SymbolicRegressor(_dataset, _valDataset, options, _timeLimit);
+
+            if (_batchEvaluator != null)
+            {
+                regressor.BatchEvaluator = _batchEvaluator;
+            }
+
+            if (_constantOptimizer != null)
+            {
+                regressor.ConstantOptimizer = _constantOptimizer;
+            }
 
             if (_verbose)
             {

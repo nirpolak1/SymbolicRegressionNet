@@ -17,6 +17,37 @@ namespace SymbolicRegressionNet.Sdk.Data
         private readonly string[] _columnNames;
         private readonly int[] _rowIndices;
         private readonly int _targetIndex;
+        private double[] _flattenedFeaturesCache;
+
+        /// <summary>
+        /// Gets a flattened 1D representation of the feature data in Row-Major order.
+        /// Useful for high-performance AVX2 or GPU bulk memory copies.
+        /// Lazily allocates and caches the array on first request.
+        /// </summary>
+        public double[] FlattenedFeatures
+        {
+            get
+            {
+                if (_flattenedFeaturesCache != null) return _flattenedFeaturesCache;
+                
+                int rows = Rows;
+                int feats = FeatureCount;
+                var flat = new double[rows * feats];
+                
+                for (int r = 0; r < rows; r++)
+                {
+                    int realRow = _rowIndices != null ? _rowIndices[r] : r;
+                    for (int f = 0; f < feats; f++)
+                    {
+                        int colIndex = (_targetIndex >= 0 && f >= _targetIndex) ? f + 1 : f;
+                        flat[r * feats + f] = _columns[colIndex][realRow];
+                    }
+                }
+                
+                _flattenedFeaturesCache = flat;
+                return _flattenedFeaturesCache;
+            }
+        }
 
         /// <summary>
         /// Number of rows in this dataset (or view).

@@ -10,25 +10,30 @@ This board is maintained by the AI team using the following rules:
 ---
 
 ## Epics
-- **[Epic 25] Grammar Constraints (PCFG)**
-  *Source:* ICEBOX.md (Machine Learning Engineer) | *Impact:* Medium | *Complexity:* High
-  *Goal:* Implement Probabilistic Context-Free Grammar (PCFG) or regex-driven AST constraint logic to restrict search space to valid physical forms (e.g. `g*m1*m2/r^2`).
+- **[Epic 26] Native C++ AVX2 & CUDA Batch Evaluator Port**
+  *Source:* Architectural Correction (Performance Engineer) | *Impact:* High | *Complexity:* High
+  *Goal:* Port the C# `FastStackEvaluator` and `BatchEvaluator` interfaces directly into the `SymbolicRegressionNet.Core` C++ repository using intrinsic AVX2 and `.cu` CUDA kernels, ensuring maximum vectorization without C# Interop overhead.
+
+- **[Epic 27] Native C++ Quasi-Newton L-BFGS Optimizer Port**
+  *Source:* Architectural Correction (NumOpt Engineer) | *Impact:* High | *Complexity:* High
+  *Goal:* Move the `LbfgsOptimizer.cs` constant snaper into the C++ native core to tightly couple gradient descent with the C++ AST representation.
 
 ---
 
 ## Tasks to do
-- [x] **[Architect]** Define `IGrammarConstraint` restricting what AST tokens may sequentially follow others.
-- [x] **[ML-Engineer]** Implement `PcfgGrammar` supporting transition probabilities between non-terminals.
-- [x] **[API-Engineer]** Hook `PcfgGrammar` into the `RegressionBuilder` pipeline to prune illegal trees.
-- [x] **[QA-Engineer]** Write tests validating grammar correctly blocks illegal operators near physical constants.
-
----
-
 ## Tasks being done
+- [ ] **[Architect]** Define the C++ headers for the `NativeLbfgsOptimizer`.
+- [ ] **[NumOpt-Engineer]** Implement the L-BFGS gradient descent algorithm inside `lbfgs_optimizer.cpp`.
+- [ ] **[API-Engineer]** Expose the C++ optimizer via P/Invoke and migrate the C# SDK to use it.
+- [ ] **[QA-Engineer]** Run the SRBench suite to ensure the C++ ports maintain the R2 standards while bypassing C# GC.
 
 ---
 
 ## Tasks done
+- [x] **[Architect]** Define the C++ headers and P/Invoke exports for the `NativeBatchEvaluator`.
+- [x] **[Performance-Engineer]** Implement `avx2_evaluator.cpp` taking contiguous float arrays.
+- [x] **[ML-Engineer]** Write the `cuda_evaluator.cu` kernel for high-throughput discrete evaluations.
+- [x] **[API-Engineer]** Hook the .NET `RegressionBuilder` to load and pass arrays to the new C++ exports.
 
 ---
 
